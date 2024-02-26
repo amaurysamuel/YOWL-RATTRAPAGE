@@ -3,11 +3,15 @@ import axios from 'axios';
 
 const USER_REGEX = /^[A-Za-z][A-Za-z0-9-_]{3,23}$/;
 const PWD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%]).{8,24}$/;
-const REGISTER_URL = 'http://localhost:1337/api/auth/local/register'; // Change this to your Strapi registration endpoint
+const REGISTER_URL = 'http://localhost:1337/api/auth/local/register';
 
 const Register = () => {
     const userRef = useRef();
     const errRef = useRef();
+
+    const [email, setEmail] = useState('');
+    const [validEmail, setValidEmail] = useState(false);
+    const [EmailFocus, setEmailFocus] = useState(false);
 
     const [user, setUser] = useState('');
     const [validName, setValidName] = useState(false);
@@ -33,7 +37,7 @@ const Register = () => {
         }
 
         try {
-            const response = await axios.post(REGISTER_URL, { username: user, password: pwd });
+            const response = await axios.post(REGISTER_URL, {email: email, username: user, password: pwd });
             console.log(response.data);
             setSuccess(true);
             setUser('');
@@ -52,7 +56,7 @@ const Register = () => {
                 <section>
                     <h1>Success!</h1>
                     <p>
-                        <a href="#">Sign In</a>
+                        <a href="/Login">Sign In</a>
                     </p>
                 </section>
             ) : (
@@ -60,6 +64,23 @@ const Register = () => {
                     <p ref={errRef} className={errMsg ? "errmsg" : "offscreen"} aria-live="assertive">{errMsg}</p>
                     <h1>Register</h1>
                     <form onSubmit={handleSubmit}>
+                        <label htmlFor="email">
+                            Email:
+                        </label>
+                        <input
+                            type="email"
+                            id="email"
+                            onChange={(e) => setEmail(e.target.value)}
+                            value={email}
+                            required
+                            aria-invalid={validEmail ? "false" : "true"}
+                            aria-describedby="emailnote"
+                            onFocus={() => setEmailFocus(true)}
+                            onBlur={() => setEmailFocus(false)}
+                        />
+                        <p id="emailnote" className={EmailFocus && email && !validEmail ? "instructions" : "offscreen"}>
+                            Doit être une adresse email valide.
+                        </p>
                         <label htmlFor="username">
                             Username:
                         </label>
@@ -96,7 +117,7 @@ const Register = () => {
                             onFocus={() => setPwdFocus(true)}
                             onBlur={() => setPwdFocus(false)}
                         />
-                        <p id="pwdnote" className={pwdFocus && !validPwd ? "instructions" : "offscreen"}>
+                        <p id="pwdnote" className={pwdFocus && pwd && !validPwd ? "instructions" : "offscreen"}>
                             8 to 24 characters.<br />
                             Must include uppercase and lowercase letters, a number and a special character.<br />
                             Allowed special characters: ! @ # $ %
@@ -116,7 +137,7 @@ const Register = () => {
                             onFocus={() => setMatchFocus(true)}
                             onBlur={() => setMatchFocus(false)}
                         />
-                        <p id="confirmnote" className={matchFocus && !validMatch ? "instructions" : "offscreen"}>
+                        <p id="confirmnote" className={matchFocus && matchPwd && !validMatch ? "instructions" : "offscreen"}>
                             Must match the first password input field.
                         </p>
 
