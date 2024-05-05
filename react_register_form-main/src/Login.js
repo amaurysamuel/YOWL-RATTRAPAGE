@@ -56,14 +56,19 @@ const Login = () => {
                     withCredentials: true
                 }
             );
-            console.log(response?.data);
-            console.log(response?.accessToken);
-            console.log(JSON.stringify(response))
-            setSuccess(true);
-            //clear state and controlled inputs
-            //need value attrib on inputs for this
-            setEmail('');
-            setPwd('');
+            const { data } = response;
+            console.log(data);
+            const token = data?.jwt;
+            if (token) {
+                // Stocker le token dans le sessionStorage
+                localStorage.setItem('token', token);
+                setSuccess(true);
+                // Effacer les états et les entrées contrôlées
+                setEmail('');
+                setPwd('');
+            } else {
+                setErrMsg('Token missing');
+            }
         } catch (err) {
             if (!err?.response) {
                 setErrMsg('No Server Response');

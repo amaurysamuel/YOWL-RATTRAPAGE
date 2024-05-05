@@ -368,6 +368,7 @@ export interface ApiArticleArticle extends Schema.CollectionType {
     singularName: 'article';
     pluralName: 'articles';
     displayName: 'Article';
+    description: '';
   };
   options: {
     draftAndPublish: true;
@@ -375,10 +376,10 @@ export interface ApiArticleArticle extends Schema.CollectionType {
   attributes: {
     message: Attribute.Text;
     auteur: Attribute.String;
-    user: Attribute.Relation<
+    admin_user: Attribute.Relation<
       'api::article.article',
-      'manyToOne',
-      'plugin::users-permissions.user'
+      'oneToOne',
+      'admin::user'
     >;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
