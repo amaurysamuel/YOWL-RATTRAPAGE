@@ -1,10 +1,35 @@
 import React, { useState, useEffect } from 'react';
-import './index.css'; // Importez le fichier CSS
+import './index.css';
 
 function Home() {
     const [articles, setArticles] = useState([]);
     const [titre, setTitre] = useState('');
     const [contenu, setContenu] = useState('');
+    const [selectedArticle, setSelectedArticle] = useState(null);
+    const [error, setError] = useState(null);
+
+    async function handleAjouterArticle() {
+        setSelectedArticle(null);
+        ajouterArticle();
+    }
+
+    async function handleModifierArticle(article) {
+        if (!article || !article.id) {
+            console.error("Article ou ID de l'article est undefined");
+            return;
+        }
+        setSelectedArticle(article);
+        modifierArticle();
+    }
+
+    async function handleSupprimerArticle(article) {
+        if (!article || !article.id) {
+            console.error("Article ou ID de l'article est undefined");
+            return;
+        }
+        setSelectedArticle(article);
+        supprimerArticle();
+    }
 
     useEffect(() => {
         async function fetchArticles() {
@@ -14,44 +39,63 @@ function Home() {
                     throw new Error('Token d\'authentification manquant');
                 }
 
-                const fetchedArticles = await Promise.all([3, 4, 5, 6, 7].map(async id => {
-                    const response = await fetch(`http://localhost:1337/api/articles/${id}`, {
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        }
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`Erreur lors de la récupération de l'article ${id}`);
+                const fetchedArticles = await fetch(`http://localhost:1337/api/articles`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
                     }
+                });
 
-                    return await response.json();
+                if (!fetchedArticles.ok) {
+                    throw new Error(`Erreur lors de la récupération des articles`);
+                }
+
+                const articlesData = await fetchedArticles.json();
+
+                console.log(articlesData.data);
+
+                setArticles(articlesData.data.map(article => {
+                    if (!article.id) {
+                        console.error("Article reçu sans ID: ", article);
+                    }
+                    return article;
                 }));
 
-                setArticles(fetchedArticles);
-
             } catch (error) {
-                console.error(error);
+                console.error(error.message);
+                setError(`Erreur lors du chargement des articles: ${error.message}`);
             }
         }
 
         fetchArticles();
     }, []);
 
+
+
     async function ajouterArticle() {
+        const requestBody = {
+            data: {
+                auteur: titre,
+
+
+                message: contenu,
+            },
+            state: "published"
+        };
+        console.log(requestBody)
         try {
             const token = localStorage.getItem("token");
             if (!token) {
                 throw new Error('Token d\'authentification manquant');
             }
-
+            //console.log(JSON.stringify(`data: {${titre}, ${contenu}}`))
             const response = await fetch('http://localhost:1337/api/articles', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ titre, contenu }),
+
+                body: JSON.stringify(requestBody)
             });
 
             if (!response.ok) {
@@ -59,22 +103,76 @@ function Home() {
             }
 
             const data = await response.json();
-            setArticles([...articles, data]);
+
+            setArticles([...articles, data.data]);
+            //console.log(articles)
             setTitre('');
             setContenu('');
         } catch (error) {
-            console.error(error);
+            console.error("Erreur lors de l'ajout d'un article: ", error);
+            setError(`Erreur lors de l'ajout de l'article: ${error.message}`);
         }
     }
 
-    async function supprimerArticle(id) {
+    async function modifierArticle() {
+        console.log("selectedArticle:", selectedArticle);
+        if (!selectedArticle || !selectedArticle.data || !selectedArticle.data.id) {
+            console.error("L'article sélectionné est invalide.");
+            return;
+        }
+
+        const requestBody = {
+            data: {
+                auteur: titre,
+                message: contenu,
+            },
+        };
+
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                throw new Error('Token d\'authentification manquant');
+            }
+            console.log(selectedArticle.id)
+            console.log(requestBody)
+            const response = await fetch(`http://localhost:1337/api/articles/${selectedArticle.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+
+            if (!response.ok) {
+                throw new Error('Erreur lors de la modification de l\'article');
+            }
+
+            const updatedArticle = await response.json();
+            const nouveauxArticles = articles.map(article =>
+                article.data.id === selectedArticle.data.id ? updatedArticle : article
+            );
+            setArticles(nouveauxArticles);
+            setTitre('');
+            setContenu('');
+            setSelectedArticle(null);
+        } catch (error) {
+            console.error("Erreur lors de la modification d'un article: ", error);
+            setError(`Erreur lors de la modification de l'article: ${error.message}`);
+        }
+    }
+
+
+    async function supprimerArticle() {
+        if (!selectedArticle) return;
         try {
             const token = localStorage.getItem("token");
             if (!token) {
                 throw new Error('Token d\'authentification manquant');
             }
 
-            const response = await fetch(`http://localhost:1337/api/articles/${id}`, {
+            const response = await fetch(`http://localhost:1337/api/articles/${selectedArticle.id}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -82,64 +180,61 @@ function Home() {
             });
 
             if (!response.ok) {
-                throw new Error(`Erreur lors de la suppression de l'article ${id}`);
+                throw new Error('Erreur lors de la suppression de l\'article');
             }
 
-            // Filtrer les articles pour supprimer celui avec l'ID donné
-            const nouveauxArticles = articles.filter(article => article.id !== id);
+            const nouveauxArticles = articles.filter(article => article.id !== selectedArticle.id);
             setArticles(nouveauxArticles);
-        } catch (error) {
-            console.error(error);
+            setSelectedArticle(null);
         }
-    }
-
-    async function modifierArticle(id, nouveauTitre, nouveauContenu) {
-        try {
-            const token = localStorage.getItem("token");
-            if (!token) {
-                throw new Error('Token d\'authentification manquant');
-            }
-
-            const response = await fetch(`http://localhost:1337/api/articles/${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ titre: nouveauTitre, contenu: nouveauContenu }),
-            });
-
-            if (!response.ok) {
-                throw new Error(`Erreur lors de la modification de l'article ${id}`);
-            }
-
-            const data = await response.json();
-            setArticles(articles.map(article => article.id === id ? data : article));
-        } catch (error) {
-            console.error(error);
+        catch (error) {
+            console.error("Erreur lors de la suppression d'un article: ", error);
+            setError(`Erreur lors de la suppression de l'article: ${error.message}`);
         }
     }
 
     return (
         <div className="container">
-            <div className="input-container">
-                <input type="text" value={titre} onChange={e => setTitre(e.target.value)} placeholder="Titre de l'article" />
-                <textarea value={contenu} onChange={e => setContenu(e.target.value)} placeholder="Contenu de l'article" />
-            </div>
-            <div className="button-container">
-                <button onClick={ajouterArticle}>Ajouter un article</button>
+            {error && <div className="error-message">{error}</div>}
+            <div className="new-article-container">
+                <input
+                    type="text"
+                    value={titre}
+                    onChange={e => setTitre(e.target.value)}
+                    placeholder="Titre de l'article"
+                />
+                <textarea
+                    value={contenu}
+                    onChange={e => setContenu(e.target.value)}
+                    placeholder="Contenu de l'article"
+                />
+                {selectedArticle ? (
+                    <button onClick={() => handleModifierArticle(selectedArticle)}>
+                        Modifier l'article
+                    </button>
+                ) : (
+                    <button onClick={handleAjouterArticle}>Ajouter un article</button>
+                )}
             </div>
             <div className="article-container">
                 {articles.map(article => (
-                    <div key={article.id}>
-                        <h2>{article.data.attributes.auteur}</h2>
-                        <p>{article.data.attributes.message}</p>
-                        <button onClick={() => supprimerArticle(article.id)}>Supprimer</button>
-                        <button onClick={() => modifierArticle(article.id, titre, contenu)}>Modifier</button>
+                    <div key={article.id} className="article-card">
+                        <h2>{article.attributes.auteur}</h2>
+                        <p>{article.attributes.message}</p>
+                        <div className="button-box">
+                            <button onClick={() => handleSupprimerArticle(article)}>
+                                Supprimer
+                            </button>
+                            <button onClick={() => handleModifierArticle(article)}>
+                                Modifier
+                            </button>
+                        </div>
                     </div>
                 ))}
             </div>
         </div>
+
+
     );
 }
 
