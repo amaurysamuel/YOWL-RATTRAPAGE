@@ -1,40 +1,123 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './index.css'; // Importez le fichier CSS
 
 function Home() {
-    const [articles, setArticles] = useState([
-        { id: 1, titre: 'Article 1', contenu: 'Contenu de l\'article 1', auteur: 'John Doe' },
-        { id: 2, titre: 'Article 2', contenu: 'Contenu de l\'article 2', auteur: 'Jane Doe' },
-    ]);
-
+    const [articles, setArticles] = useState([]);
     const [titre, setTitre] = useState('');
     const [contenu, setContenu] = useState('');
-    const [idAModifier, setIdAModifier] = useState(null);
 
-    function ajouterArticle() {
-        const nouvelArticle = { id: Date.now(), titre, contenu, auteur: 'John Doe' }; // Ajouter le nom de la personne ici
-        setArticles([...articles, nouvelArticle]);
-        setTitre('');
-        setContenu('');
-    }
+    useEffect(() => {
+        async function fetchArticles() {
+            try {
+                const token = localStorage.getItem("token");
+                if (!token) {
+                    throw new Error('Token d\'authentification manquant');
+                }
 
-    function modifierArticle() {
-        const nouveauxArticles = articles.map(article => {
-            if (article.id === idAModifier) {
-                return { ...article, titre, contenu };
-            } else {
-                return article;
+                const fetchedArticles = await Promise.all([3, 4, 5, 6, 7].map(async id => {
+                    const response = await fetch(`http://localhost:1337/api/articles/${id}`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Erreur lors de la récupération de l'article ${id}`);
+                    }
+
+                    return await response.json();
+                }));
+
+                setArticles(fetchedArticles);
+
+            } catch (error) {
+                console.error(error);
             }
-        });
-        setArticles(nouveauxArticles);
-        setTitre('');
-        setContenu('');
-        setIdAModifier(null);
+        }
+
+        fetchArticles();
+    }, []);
+
+    async function ajouterArticle() {
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                throw new Error('Token d\'authentification manquant');
+            }
+
+            const response = await fetch('http://localhost:1337/api/articles', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ titre, contenu }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Erreur lors de l\'ajout de l\'article');
+            }
+
+            const data = await response.json();
+            setArticles([...articles, data]);
+            setTitre('');
+            setContenu('');
+        } catch (error) {
+            console.error(error);
+        }
     }
 
-    function supprimerArticle(id) {
-        const nouveauxArticles = articles.filter(article => article.id !== id);
-        setArticles(nouveauxArticles);
+    async function supprimerArticle(id) {
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                throw new Error('Token d\'authentification manquant');
+            }
+
+            const response = await fetch(`http://localhost:1337/api/articles/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Erreur lors de la suppression de l'article ${id}`);
+            }
+
+            // Filtrer les articles pour supprimer celui avec l'ID donné
+            const nouveauxArticles = articles.filter(article => article.id !== id);
+            setArticles(nouveauxArticles);
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    async function modifierArticle(id, nouveauTitre, nouveauContenu) {
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                throw new Error('Token d\'authentification manquant');
+            }
+
+            const response = await fetch(`http://localhost:1337/api/articles/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ titre: nouveauTitre, contenu: nouveauContenu }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Erreur lors de la modification de l'article ${id}`);
+            }
+
+            const data = await response.json();
+            setArticles(articles.map(article => article.id === id ? data : article));
+        } catch (error) {
+            console.error(error);
+        }
     }
 
     return (
@@ -44,20 +127,15 @@ function Home() {
                 <textarea value={contenu} onChange={e => setContenu(e.target.value)} placeholder="Contenu de l'article" />
             </div>
             <div className="button-container">
-                {idAModifier ? (
-                    <button onClick={modifierArticle}>Modifier l'article</button>
-                ) : (
-                    <button onClick={ajouterArticle}>Ajouter un article</button>
-                )}
+                <button onClick={ajouterArticle}>Ajouter un article</button>
             </div>
             <div className="article-container">
                 {articles.map(article => (
                     <div key={article.id}>
-                        <h2>{article.titre}</h2>
-                        <p>{article.contenu}</p>
-                        <p>Par: {article.auteur}</p> {/* Afficher le nom de l'auteur */}
-                        <button onClick={() => setIdAModifier(article.id)}>Modifier</button>
+                        <h2>{article.data.attributes.auteur}</h2>
+                        <p>{article.data.attributes.message}</p>
                         <button onClick={() => supprimerArticle(article.id)}>Supprimer</button>
+                        <button onClick={() => modifierArticle(article.id, titre, contenu)}>Modifier</button>
                     </div>
                 ))}
             </div>
