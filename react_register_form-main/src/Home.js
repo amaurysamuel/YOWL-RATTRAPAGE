@@ -116,7 +116,7 @@ function Home() {
 
     async function modifierArticle() {
         console.log("selectedArticle:", selectedArticle);
-        if (!selectedArticle || !selectedArticle.data || !selectedArticle.data.id) {
+        if (!selectedArticle || !selectedArticle.id) {
             console.error("L'article sélectionné est invalide.");
             return;
         }
@@ -144,14 +144,13 @@ function Home() {
                 body: JSON.stringify(requestBody)
             });
 
-
             if (!response.ok) {
                 throw new Error('Erreur lors de la modification de l\'article');
             }
 
             const updatedArticle = await response.json();
             const nouveauxArticles = articles.map(article =>
-                article.data.id === selectedArticle.data.id ? updatedArticle : article
+                article.id === selectedArticle.id ? updatedArticle.data : article
             );
             setArticles(nouveauxArticles);
             setTitre('');
@@ -162,7 +161,6 @@ function Home() {
             setError(`Erreur lors de la modification de l'article: ${error.message}`);
         }
     }
-
 
     async function supprimerArticle() {
         if (!selectedArticle) return;
