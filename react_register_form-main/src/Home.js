@@ -10,7 +10,7 @@ function Home() {
 
     async function handleAjouterArticle() {
         setSelectedArticle(null);
-        ajouterArticle();
+      await  ajouterArticle();
     }
 
     async function handleModifierArticle(article) {
@@ -19,7 +19,7 @@ function Home() {
             return;
         }
         setSelectedArticle(article);
-        modifierArticle();
+       await modifierArticle();
     }
 
     async function handleSupprimerArticle(article) {
@@ -28,7 +28,7 @@ function Home() {
             return;
         }
         setSelectedArticle(article);
-        supprimerArticle();
+      await  supprimerArticle();
     }
 
     useEffect(() => {

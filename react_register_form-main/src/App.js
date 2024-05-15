@@ -14,6 +14,7 @@ const App = () => {
                 <Route path="/register" element={<Register />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/home" element={<Home />} />
+                <Route path="/counter" element={<counter />} />
                 {/* Ajoutez d'autres routes si nécessaire */}
             </Routes>
         </Router>

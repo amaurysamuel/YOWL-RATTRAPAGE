@@ -60,10 +60,10 @@ const Login = () => {
             console.log(data);
             const token = data?.jwt;
             if (token) {
-                // Stocker le token dans le sessionStorage
+
                 localStorage.setItem('token', token);
                 setSuccess(true);
-                // Effacer les états et les entrées contrôlées
+
                 setEmail('');
                 setPwd('');
             } else {
